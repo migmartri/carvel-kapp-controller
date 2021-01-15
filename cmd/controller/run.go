@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/vmware-tanzu/carvel-kapp-controller/cmd/controller/handlers"
 	kcv1alpha1 "github.com/vmware-tanzu/carvel-kapp-controller/pkg/apis/kappctrl/v1alpha1"
 	kcclient "github.com/vmware-tanzu/carvel-kapp-controller/pkg/client/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
@@ -114,6 +115,12 @@ func Run(opts Options, runLog logr.Logger) {
 		}
 
 		err = installedPkgCtrl.Watch(&source.Kind{Type: &kcv1alpha1.InstalledPkg{}}, &handler.EnqueueRequestForObject{})
+		if err != nil {
+			runLog.Error(err, "unable to watch *kcv1alpha1.InstalledPkg")
+			os.Exit(1)
+		}
+
+		err = installedPkgCtrl.Watch(&source.Kind{Type: &kcv1alpha1.Pkg{}}, handlers.NewInstalledPkgVersionHandler(kcClient, runLog.WithName("handler")))
 		if err != nil {
 			runLog.Error(err, "unable to watch *kcv1alpha1.InstalledPkg")
 			os.Exit(1)
