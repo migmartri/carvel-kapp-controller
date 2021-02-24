@@ -4,6 +4,7 @@
 package global
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -113,7 +114,7 @@ func (gc *Configurer) configureProxies(httpProxy, httpsProxy, noProxy string) {
 }
 
 func (gc *Configurer) configMap() (*v1.ConfigMap, error) {
-	configMap, err := gc.client.CoreV1().ConfigMaps(gc.namespace).Get(configMapName, metav1.GetOptions{})
+	configMap, err := gc.client.CoreV1().ConfigMaps(gc.namespace).Get(context.Background(), configMapName, metav1.GetOptions{})
 
 	if errors.IsNotFound(err) {
 		return nil, nil

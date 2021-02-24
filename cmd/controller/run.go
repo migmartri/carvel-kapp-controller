@@ -11,7 +11,9 @@ import (
 	"time"
 
 	instpkgv1alpha1 "github.com/vmware-tanzu/carvel-kapp-controller/pkg/apis/installpackage/v1alpha1"
-	pkgv1alpha1 "github.com/vmware-tanzu/carvel-kapp-controller/pkg/apis/package/v1alpha1"
+	"github.com/vmware-tanzu/carvel-kapp-controller/pkg/apiserver"
+	pkgv1alpha1 "github.com/vmware-tanzu/carvel-kapp-controller/pkg/apiserver/apis/packages/v1alpha1"
+	pkgclient "github.com/vmware-tanzu/carvel-kapp-controller/pkg/apiserver/client/clientset/versioned"
 
 	"github.com/go-logr/logr"
 	"github.com/vmware-tanzu/carvel-kapp-controller/cmd/controller/handlers"
@@ -72,10 +74,26 @@ func Run(opts Options, runLog logr.Logger) {
 		os.Exit(1)
 	}
 
+	pkgClient, err := pkgclient.NewForConfig(restConfig)
+	if err != nil {
+		runLog.Error(err, "building app client")
+		os.Exit(1)
+	}
+
 	appFactory := AppFactory{
 		coreClient: coreClient,
 		appClient:  kcClient,
 	}
+
+	server, err := apiserver.NewAPIServer(restConfig)
+	if err != nil {
+		runLog.Error(err, "creating server")
+		os.Exit(1)
+	}
+	server.Run()
+
+	// this is hacky, but give the server time to start
+	time.Sleep(30 * time.Second)
 
 	{ // add controller for apps
 		ctrlAppOpts := controller.Options{
@@ -106,8 +124,9 @@ func Run(opts Options, runLog logr.Logger) {
 	{ // add controller for installedPkgs
 		installedPkgsCtrlOpts := controller.Options{
 			Reconciler: &InstalledPkgReconciler{
-				intalledPkgClient: kcClient,
-				log:               runLog.WithName("ipr"),
+				kcClient:  kcClient,
+				pkgClient: pkgClient,
+				log:       runLog.WithName("ipr"),
 			},
 			MaxConcurrentReconciles: opts.Concurrency,
 		}

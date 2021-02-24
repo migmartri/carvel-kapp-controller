@@ -3,22 +3,22 @@ module github.com/vmware-tanzu/carvel-kapp-controller
 go 1.13
 
 require (
-	cloud.google.com/go v0.43.0 // indirect
 	github.com/ghodss/yaml v1.0.0
-	github.com/go-logr/logr v0.1.0
-	github.com/go-logr/zapr v0.1.1 // indirect
-	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
-	github.com/imdario/mergo v0.3.7 // indirect
-	github.com/prometheus/common v0.6.0 // indirect
-	github.com/prometheus/procfs v0.0.3 // indirect
+	github.com/go-logr/logr v0.4.0
+	github.com/go-openapi/spec v0.19.3
+	github.com/prometheus/common v0.10.0
 	github.com/vmware-tanzu/carvel-vendir v0.16.0
-	go.uber.org/atomic v1.4.0 // indirect
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
-	golang.org/x/tools v0.0.0-20190926165942-a8d5d34286bd // indirect
-	k8s.io/api v0.17.2
-	k8s.io/apimachinery v0.17.2
-	k8s.io/client-go v0.17.2
-	k8s.io/code-generator v0.17.2
-	sigs.k8s.io/controller-runtime v0.5.0
+	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
+	k8s.io/api v0.19.2
+	k8s.io/apimachinery v0.19.2
+	k8s.io/apiserver v0.19.2
+	k8s.io/client-go v0.19.2
+	k8s.io/code-generator v0.19.2
+	k8s.io/klog v1.0.0
+	k8s.io/kube-aggregator v0.19.2
+	k8s.io/kube-openapi v0.0.0-20200805222855-6aeccd4b50c6
+	sigs.k8s.io/controller-runtime v0.7.0
 	sigs.k8s.io/yaml v1.2.0
 )
+
+replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1

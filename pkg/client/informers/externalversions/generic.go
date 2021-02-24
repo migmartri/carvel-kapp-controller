@@ -7,7 +7,6 @@ import (
 
 	v1alpha1 "github.com/vmware-tanzu/carvel-kapp-controller/pkg/apis/installpackage/v1alpha1"
 	kappctrlv1alpha1 "github.com/vmware-tanzu/carvel-kapp-controller/pkg/apis/kappctrl/v1alpha1"
-	pkgv1alpha1 "github.com/vmware-tanzu/carvel-kapp-controller/pkg/apis/package/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -44,13 +43,9 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	case v1alpha1.SchemeGroupVersion.WithResource("packagerepositories"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Install().V1alpha1().PackageRepositories().Informer()}, nil
 
-		// Group=kappctrl, Version=v1alpha1
+		// Group=kappctrl.k14s.io, Version=v1alpha1
 	case kappctrlv1alpha1.SchemeGroupVersion.WithResource("apps"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kappctrl().V1alpha1().Apps().Informer()}, nil
-
-		// Group=package.carvel.dev, Version=v1alpha1
-	case pkgv1alpha1.SchemeGroupVersion.WithResource("pkgs"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Package().V1alpha1().Packages().Informer()}, nil
 
 	}
 

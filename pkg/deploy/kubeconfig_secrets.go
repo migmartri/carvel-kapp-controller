@@ -4,6 +4,7 @@
 package deploy
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -48,7 +49,7 @@ func (s *KubeconfigSecrets) Find(genericOpts GenericOpts, clusterOpts *v1alpha1.
 func (s *KubeconfigSecrets) fetchKubeconfigYAML(nsName string,
 	secretRef *v1alpha1.AppClusterKubeconfigSecretRef) (string, error) {
 
-	secret, err := s.coreClient.CoreV1().Secrets(nsName).Get(
+	secret, err := s.coreClient.CoreV1().Secrets(nsName).Get(context.Background(),
 		secretRef.Name, metav1.GetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("Getting kubeconfig secret: %s", err)

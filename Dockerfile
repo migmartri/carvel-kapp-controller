@@ -53,8 +53,7 @@ RUN wget -O- https://github.com/mozilla/sops/releases/download/v3.6.1/sops-v3.6.
   chmod +x /usr/local/bin/sops && sops -v
 
 # kapp-controller
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -ldflags=-buildid= -trimpath -o controller ./cmd/main.go
+COPY ./controller ./controller
 
 # --- run image ---
 FROM photon:3.0
