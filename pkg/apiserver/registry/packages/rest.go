@@ -2,10 +2,12 @@ package packages
 
 import (
 	"context"
+	"time"
 
 	"k8s.io/apimachinery/pkg/fields"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -24,12 +26,21 @@ type REST struct {
 }
 
 var (
-	_ rest.StandardStorage = &REST{}
+	_ rest.StandardStorage    = &REST{}
+	_ rest.ShortNamesProvider = &REST{}
 )
+
+// We need to consider what else needs to be done for ObjectMeta and other system maintained fields.
+// One example I can think of is we are currently not updating generation on certain field changes,
+// which our controllers may one day rely on.
 
 // NewREST returns a REST object that will work against API services.
 func NewREST(packageStore storage.Interface) *REST {
 	return &REST{packageStore}
+}
+
+func (r *REST) ShortNames() []string {
+	return []string{"pkgs"}
 }
 
 func (r *REST) New() runtime.Object {
@@ -46,6 +57,8 @@ func (r *REST) Create(ctx context.Context, obj runtime.Object, createValidation 
 			return nil, err
 		}
 	}
+	pkg := obj.(*packages.Package)
+	pkg.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
 
 	r.packageStore.Create(obj)
 	return obj, nil
@@ -96,7 +109,9 @@ func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.Va
 	}
 
 	err = r.packageStore.Delete(name)
-	return nil, true, err
+	pkg := obj.(*packages.Package)
+	pkg.ObjectMeta.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+	return pkg, true, err
 }
 
 func (r *REST) DeleteCollection(ctx context.Context, deleteValidation rest.ValidateObjectFunc, options *metav1.DeleteOptions, listOptions *metainternalversion.ListOptions) (runtime.Object, error) {
@@ -154,7 +169,45 @@ func (r *REST) Watch(ctx context.Context, options *internalversion.ListOptions) 
 }
 
 func (r *REST) ConvertToTable(ctx context.Context, obj runtime.Object, tableOptions runtime.Object) (*metav1.Table, error) {
-	return rest.NewDefaultTableConvertor(packages.Resource("package")).ConvertToTable(ctx, obj, tableOptions)
+	var table metav1.Table
+	fn := func(obj runtime.Object) error {
+		pkg := obj.(*packages.Package)
+		table.Rows = append(table.Rows, metav1.TableRow{
+			Cells:  []interface{}{pkg.Name, pkg.Spec.PublicName, pkg.Spec.Version, time.Since(pkg.ObjectMeta.CreationTimestamp.Time).Round(1 * time.Second).String()},
+			Object: runtime.RawExtension{Object: obj},
+		})
+		return nil
+	}
+	switch {
+	case meta.IsListType(obj):
+		if err := meta.EachListItem(obj, fn); err != nil {
+			return nil, err
+		}
+	default:
+		if err := fn(obj); err != nil {
+			return nil, err
+		}
+	}
+	if m, err := meta.ListAccessor(obj); err == nil {
+		table.ResourceVersion = m.GetResourceVersion()
+		table.SelfLink = m.GetSelfLink()
+		table.Continue = m.GetContinue()
+		table.RemainingItemCount = m.GetRemainingItemCount()
+	} else {
+		if m, err := meta.CommonAccessor(obj); err == nil {
+			table.ResourceVersion = m.GetResourceVersion()
+			table.SelfLink = m.GetSelfLink()
+		}
+	}
+	if opt, ok := tableOptions.(*metav1.TableOptions); !ok || !opt.NoHeaders {
+		table.ColumnDefinitions = []metav1.TableColumnDefinition{
+			{Name: "Name", Type: "string", Format: "name", Description: "Package resource name"},
+			{Name: "PublicName", Type: "string", Description: "User facing package name"},
+			{Name: "Version", Type: "string", Description: "Package version"},
+			{Name: "Age", Type: "date", Description: "Time since resource creation"},
+		}
+	}
+	return &table, nil
 }
 
 func GetSelectors(options *internalversion.ListOptions) (string, labels.Selector, fields.Selector) {
