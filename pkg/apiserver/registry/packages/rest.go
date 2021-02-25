@@ -40,7 +40,7 @@ func NewREST(packageStore storage.Interface) *REST {
 }
 
 func (r *REST) ShortNames() []string {
-	return []string{"pkgs"}
+	return []string{"pkg"}
 }
 
 func (r *REST) New() runtime.Object {
